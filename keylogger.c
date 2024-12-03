@@ -33,7 +33,7 @@ static struct input_handler keylogger_handler;
 
 
 
-static const unsigned int konami_code[] = {KEY_UP, KEY_UP, KEY_DOWN, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_LEFT, KEY_RIGHT, KEY_B, KEY_A};
+static const unsigned int konami_code[] = {103, 103, 108, 108, 105, 106, 105, 106, 48, 30};
 
 static int konami_index = 0;
 
