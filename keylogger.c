@@ -43,6 +43,15 @@ static int konami_index = 0;
 
 static void play_beep(void) {
     printk(KERN_INFO "konami code activated");
+    unsigned char tmp;
+
+    tmp = inb(SPEAKER_PORT);
+    outb(tmp | 3, SPEAKER_PORT);
+
+    msleep(500); 
+
+    tmp = inb(SPEAKER_PORT);
+    outb(tmp & ~3, SPEAKER_PORT);
 }
 
 
