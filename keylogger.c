@@ -45,10 +45,11 @@ static void play_beep(void) {
 static void keylogger_event(struct input_handle *handle, unsigned int type, unsigned int code, int value) {
     if (type == EV_KEY && value == 1) { 
         printk(KERN_INFO "Key pressed: %u\n", code);
-
+        printk(KERN_INFO "index: %u\n", konami_index);
         if (code == konami_code[konami_index]) {
             konami_index++;
             if (konami_index == ARRAY_SIZE(konami_code)) {
+                printk(KERN_INFO "weszlo");
                 play_beep();
                 konami_index = 0;
             }
