@@ -2,6 +2,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/input.h>
+#include <asm/io.h>
 
 
 MODULE_LICENSE("GPL");
@@ -39,6 +40,9 @@ static const unsigned int konami_code[] = {
     KEY_LEFT, KEY_RIGHT, KEY_LEFT, KEY_RIGHT,
     KEY_B, KEY_A
 };
+
+#define SPEAKER_PORT 0x61
+
 static int konami_index = 0;
 
 static void play_beep(void) {
