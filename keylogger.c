@@ -3,6 +3,7 @@
 #include <linux/init.h>
 #include <linux/input.h>
 #include <asm/io.h>
+#include <linux/delay.h>
 
 
 MODULE_LICENSE("GPL");
