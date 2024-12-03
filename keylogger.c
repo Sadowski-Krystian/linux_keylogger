@@ -44,10 +44,23 @@ static const unsigned int konami_code[] = {
 
 static int konami_index = 0;
 
+#define SPEAKER_PORT 0x61
+
 static void play_beep(void) {
     printk(KERN_INFO "konami code activated");
 
     printk(KERN_INFO "\a");
+
+
+    unsigned char tmp;
+
+    tmp = inb(SPEAKER_PORT);
+    outb(tmp | 3, SPEAKER_PORT);
+
+    msleep(500);
+
+    tmp = inb(SPEAKER_PORT);
+    outb(tmp & ~3, SPEAKER_PORT);
 }
 
 
