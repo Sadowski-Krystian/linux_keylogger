@@ -42,7 +42,7 @@ static const unsigned int konami_code[] = {
 static int konami_index = 0;
 
 static void play_beep(void) {
-    printk(KERN_INFO "\a");
+    printk(KERN_INFO "konami code activated");
 }
 
 
